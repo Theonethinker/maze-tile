@@ -6,6 +6,11 @@ enum ActionKind {
 function initializeAnimations () {
     InitializeHeroAnimations()
 }
+function animateIdle () {
+    let anim: animation.Animation = null
+    mainIdleLeft = animation.createAnimation(ActionKind.Walking, 1000)
+    animation.attachAnimation(mySprite, anim)
+}
 function animateRun () {
     mainRunLeft = animation.createAnimation(ActionKind.Walking, 100)
     animation.attachAnimation(mySprite, mainRunLeft)
@@ -156,10 +161,6 @@ function animateRun () {
         . . . . . f f . . . f f f . . . 
         `)
 }
-function animateJumps () {
-    anim = animation.createAnimation(ActionKind.Walking, 1000)
-    animation.attachAnimation(mySprite, anim)
-}
 scene.onOverlapTile(SpriteKind.Player, sprites.dungeon.chestClosed, function (sprite, location) {
     game.gameOver(false)
 })
@@ -169,9 +170,9 @@ function InitializeHeroAnimations () {
 scene.onOverlapTile(SpriteKind.Player, sprites.castle.tileGrass1, function (sprite, location) {
     game.gameOver(false)
 })
-let anim: animation.Animation = null
 let mainRunRight: animation.Animation = null
 let mainRunLeft: animation.Animation = null
+let mainIdleLeft: animation.Animation = null
 let mySprite: Sprite = null
 tiles.setCurrentTilemap(tilemap`level1`)
 scene.setBackgroundImage(img`
