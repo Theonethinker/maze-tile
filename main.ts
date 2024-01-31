@@ -5,35 +5,33 @@ enum ActionKind {
 }
 namespace SpriteKind {
     export const sword = SpriteKind.create()
+    export const Timer = SpriteKind.create()
 }
 controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     lastDirection = 0
     walk()
 })
-function Spawn_Enemies () {
-    for (let value of tiles.getTilesByType(sprites.castle.rock0)) {
-        Opp = sprites.create(img`
-            . . f f f . . . . . . . . f f f 
-            . f f c c . . . . . . f c b b c 
-            f f c c . . . . . . f c b b c . 
-            f c f c . . . . . . f b c c c . 
-            f f f c c . c c . f c b b c c . 
-            f f c 3 c c 3 c c f b c b b c . 
-            f f b 3 b c 3 b c f b c c b c . 
-            . c b b b b b b c b b c c c . . 
-            . c 1 b b b 1 b b c c c c . . . 
-            c b b b b b b b b b c c . . . . 
-            c b c b b b c b b b b f . . . . 
-            f b 1 f f f 1 b b b b f c . . . 
-            f b b b b b b b b b b f c c . . 
-            . f b b b b b b b b c f . . . . 
-            . . f b b b b b b c f . . . . . 
-            . . . f f f f f f f . . . . . . 
-            `, SpriteKind.Enemy)
-        tiles.placeOnTile(Opp, value)
-        tiles.setTileAt(value, sprites.castle.tilePath5)
-        Opp.follow(MainCharacter, 25)
-    }
+function CreateTimer (ms: number) {
+    timer = sprites.create(img`
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        . . . . . . . . . . . . . . . . 
+        `, SpriteKind.Timer)
+    timer.setFlag(SpriteFlag.Ghost, true)
+    timer.x = ms
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (lastDirection == 0) {
@@ -152,7 +150,7 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
         100,
         false
         )
-    } else if (0 == lastDirection) {
+    } else if (lastDirection == 2) {
         animation.runImageAnimation(
         sword,
         [img`
@@ -687,13 +685,19 @@ controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
 scene.onOverlapTile(SpriteKind.Player, sprites.castle.tileGrass1, function (sprite, location) {
     game.gameOver(false)
 })
+sprites.onDestroyed(SpriteKind.Timer, function (sprite) {
+    animation.stopAnimation(animation.AnimationTypes.All, MainCharacter)
+    walk()
+})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
     sprites.destroy(otherSprite, effects.spray, 500)
     info.changeLifeBy(-1)
 })
+let distance = 0
+let SkullEnemy: Sprite = null
 let moving = false
 let Inventory: Image[] = []
-let Opp: Sprite = null
+let timer: Sprite = null
 let lastDirection = 0
 let sword: Sprite = null
 let MainCharacter: Sprite = null
@@ -840,28 +844,8 @@ MainCharacter = sprites.create(img`
     `, SpriteKind.Player)
 MainCharacter.setStayInScreen(true)
 MainCharacter.setPosition(0, 40)
-controller.moveSprite(MainCharacter, 5, 100)
+controller.moveSprite(MainCharacter, 100, 100)
 scene.cameraFollowSprite(MainCharacter)
-let laser = sprites.create(img`
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . 2 2 . . . . . . . 
-    . . . . . . 3 1 1 3 . . . . . . 
-    . . . . . 2 1 1 1 1 2 . . . . . 
-    . . . . . 2 1 1 1 1 2 . . . . . 
-    . . . . . . 3 1 1 3 . . . . . . 
-    . . . . . . . 2 2 . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
-    `, SpriteKind.Projectile)
-Spawn_Enemies()
-walk()
 info.setLife(5)
 sword = sprites.create(img`
     . . . . . . . . . . . . . . . . 
@@ -881,12 +865,7 @@ sword = sprites.create(img`
     . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
     `, SpriteKind.sword)
-game.onUpdate(function () {
-    moving = controller.left.isPressed() || (controller.right.isPressed() || (controller.up.isPressed() || controller.down.isPressed()))
-    if (!(moving)) {
-        animation.stopAnimation(animation.AnimationTypes.All, MainCharacter)
-    }
-})
+scene.cameraFollowSprite(MainCharacter)
 game.onUpdate(function () {
     if (lastDirection == 0) {
         sword.bottom = MainCharacter.top
@@ -901,4 +880,44 @@ game.onUpdate(function () {
         sword.right = MainCharacter.left
         sword.y = MainCharacter.y
     }
+})
+game.onUpdate(function () {
+    moving = controller.left.isPressed() || (controller.right.isPressed() || (controller.up.isPressed() || controller.down.isPressed()))
+    if (!(moving)) {
+        animation.stopAnimation(animation.AnimationTypes.All, MainCharacter)
+    }
+})
+game.onUpdateInterval(2000, function () {
+    SkullEnemy = sprites.create(img`
+        ........................
+        ........................
+        ........................
+        ........................
+        ..........ffff..........
+        ........ff1111ff........
+        .......fb111111bf.......
+        .......f11111111f.......
+        ......fd11111111df......
+        ......fd11111111df......
+        ......fddd1111dddf......
+        ......fbdbfddfbdbf......
+        ......fcdcf11fcdcf......
+        .......fb111111bf.......
+        ......fffcdb1bdffff.....
+        ....fc111cbfbfc111cf....
+        ....f1b1b1ffff1b1b1f....
+        ....fbfbffffffbfbfbf....
+        .........ffffff.........
+        ...........fff..........
+        ........................
+        ........................
+        ........................
+        ........................
+        `, SpriteKind.Enemy)
+    SkullEnemy.setPosition(randint(40, scene.screenWidth()), randint(40, scene.screenHeight()))
+    distance = Math.sqrt((SkullEnemy.x - MainCharacter.x) ** 2 + (SkullEnemy.y - MainCharacter.y) ** 2)
+    while (distance < 30) {
+        SkullEnemy.setPosition(randint(40, scene.screenWidth()), randint(40, scene.screenHeight()))
+    }
+    SkullEnemy.follow(MainCharacter, 50)
 })
